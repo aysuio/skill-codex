@@ -22,7 +22,7 @@ This repository is structured as a [Claude Code Plugin](https://code.claude.com/
 Install via Claude Code's plugin system for automatic updates:
 
 ```
-/plugin marketplace add skills-directory/skill-codex
+/plugin marketplace add aysuio/skill-codex
 /plugin install skill-codex@skill-codex
 ```
 
