@@ -13,7 +13,7 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 Use these defaults automatically without asking the user. Only ask if the user explicitly requests a different model or effort level.
 
 ## Running a Task
-1. **Default: resume previous session.** After each `codex exec` run, capture the `session id` from the output and remember it for the conversation. On subsequent calls, always try `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null` first using the stored session ID. Only start a new session if no session ID is stored, resume fails, or the user explicitly asks for a new session.
+1. **Bind one Codex session to one Claude session.** Treat the current Claude conversation as owning exactly one Codex `session id`. After each `codex exec` run, capture the `session id` from the output and remember it for that Claude conversation only. On subsequent Codex calls in the same Claude conversation, always resume the exact stored `session id`. If no session ID is stored for the current Claude conversation, start a new Codex session. Do **not** use `resume --last` or any global "most recent session" fallback, because that can attach the wrong Codex session from another Claude conversation or repository. If the user explicitly provides a session ID or explicitly asks for a fresh session, follow that instruction instead.
 2. When starting a **new session**, use `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode. Assemble the command with:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
@@ -23,7 +23,7 @@ Use these defaults automatically without asking the user. Only ask if the user e
    - `--skip-git-repo-check`
    - `-C, --cd <DIR>` (if needed)
    - `"your prompt here"` (as final positional argument)
-3. When **resuming**, use the stored session ID: `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
+3. When **resuming**, use the session ID stored for the current Claude conversation: `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
 4. **IMPORTANT**: By default, append `2>/dev/null` to all `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests to see thinking tokens or if debugging is needed.
 5. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
 
@@ -37,8 +37,10 @@ Use these defaults automatically without asking the user. Only ask if the user e
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
 
 ## Following Up
-- After every `codex` command, capture the `session id` from output and store it for subsequent resume calls.
+- After every `codex` command, capture the `session id` from output and store it as the Codex session bound to the current Claude conversation.
 - When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
+- If the current Claude conversation has no stored Codex session ID, start a new Codex session instead of using `--last`.
+- If resuming the stored session fails, report that the Claude-to-Codex session binding is no longer valid and start a fresh Codex session only after making that reset explicit to the user.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
 
 ## Critical Evaluation of Codex Output
@@ -68,3 +70,4 @@ Codex is powered by OpenAI models with their own knowledge cutoffs and limitatio
 - Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
 - Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
 - When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.
+- Never silently switch to `resume --last` after a resume failure; that would break the one-Claude-session to one-Codex-session mapping.

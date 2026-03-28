@@ -42,6 +42,9 @@ rm -rf /tmp/skills-temp
 ### Important: Thinking Tokens
 By default, this skill suppresses thinking tokens (stderr output) using `2>/dev/null` to avoid bloating Claude Code's context window. If you want to see the thinking tokens for debugging or insight into Codex's reasoning process, explicitly ask Claude to show them.
 
+### Session Affinity
+Each Claude Code conversation should own exactly one Codex session. The skill should capture the `session id` created for that Claude conversation and resume that exact session on follow-up turns. It should not fall back to `resume --last`, because "most recent" can point at a different Claude conversation or repository.
+
 ### Example Workflow
 
 **User prompt:**
