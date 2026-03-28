@@ -99,9 +99,9 @@ interactive_pick() {
     return 0
   fi
 
-  print_index "$idx_file"
+  print_index "$idx_file" >&2
   while :; do
-    printf '\nSelect session number or id (blank to cancel): '
+    printf '\nSelect session number or id (blank to cancel): ' >&2
     IFS= read -r choice
     [ -n "$choice" ] || exit 0
     if resolve_choice "$idx_file" "$choice" >/dev/null 2>&1; then
