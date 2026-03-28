@@ -5,9 +5,15 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 
 # Codex Skill Guide
 
+## Defaults
+- **Model**: `gpt-5.4`
+- **Reasoning effort**: `xhigh`
+- **Fast mode**: enabled (via `service_tier = "fast"` in codex config)
+
+Use these defaults automatically without asking the user. Only ask if the user explicitly requests a different model or effort level.
+
 ## Running a Task
-1. Ask the user (via `AskUserQuestion`) which model to run (`gpt-5.4`, `gpt-5.3-codex-spark`, or `gpt-5.3-codex`) AND which reasoning effort to use (`xhigh`, `high`, `medium`, or `low`) in a **single prompt with two questions**.
-2. Select the sandbox mode required for the task; default to `--sandbox read-only` unless edits or network access are necessary.
+1. Default to `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode.
 3. Assemble the command with the appropriate options:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`

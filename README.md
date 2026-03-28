@@ -31,7 +31,7 @@ Install via Claude Code's plugin system for automatic updates:
 Extract the skill folder manually:
 
 ```
-git clone --depth 1 git@github.com:skills-directory/skill-codex.git /tmp/skills-temp && \
+git clone --depth 1 git@github.com:aysuio/skill-codex.git /tmp/skills-temp && \
 mkdir -p ~/.claude/skills && \
 cp -r /tmp/skills-temp/plugins/skill-codex/skills/codex ~/.claude/skills/codex && \
 rm -rf /tmp/skills-temp
@@ -51,14 +51,12 @@ Use codex to analyze this repository and suggest improvements for my claude code
 
 **Claude Code response:**
 Claude will activate the Codex skill and:
-1. Ask which model to use (`gpt-5.4`, `gpt-5.3-codex-spark`, or `gpt-5.3-codex`) unless already specified in your prompt.
-2. Ask which reasoning effort level (`low`, `medium`, or `high`) unless already specified in your prompt.
-3. Select appropriate sandbox mode (defaults to `read-only` for analysis)
-4. Run a command like:
+1. Use default model (`gpt-5.4`), reasoning effort (`xhigh`), and sandbox (`danger-full-access`) automatically
+2. Run a command like:
 ```bash
-codex exec -m gpt-5.3-codex-spark \
-  --config model_reasoning_effort="high" \
-  --sandbox read-only \
+codex exec -m gpt-5.4 \
+  --config model_reasoning_effort="xhigh" \
+  --sandbox danger-full-access \
   --full-auto \
   --skip-git-repo-check \
   "Analyze this Claude Code skill repository comprehensively..." 2>/dev/null
