@@ -13,20 +13,19 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 Use these defaults automatically without asking the user. Only ask if the user explicitly requests a different model or effort level.
 
 ## Running a Task
-1. Default to `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode.
-3. Assemble the command with the appropriate options:
+1. **Default: resume previous session.** After each `codex exec` run, capture the `session id` from the output and remember it for the conversation. On subsequent calls, always try `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null` first using the stored session ID. Only start a new session if no session ID is stored, resume fails, or the user explicitly asks for a new session.
+2. When starting a **new session**, use `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode. Assemble the command with:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
-   - `--sandbox <read-only|workspace-write|danger-full-access>`
+   - `--sandbox danger-full-access`
    - `--full-auto`
-   - `-C, --cd <DIR>`
+   - `--enable fast_mode`
    - `--skip-git-repo-check`
+   - `-C, --cd <DIR>` (if needed)
    - `"your prompt here"` (as final positional argument)
-3. Always use --skip-git-repo-check.
-4. When continuing a previous session, use `codex exec --skip-git-repo-check resume --last` via stdin. When resuming don't use any configuration flags unless explicitly requested by the user e.g. if he species the model or the reasoning effort when requesting to resume a session. Resume syntax: `echo "your prompt here" | codex exec --skip-git-repo-check resume --last 2>/dev/null`. All flags have to be inserted between exec and resume.
-5. **IMPORTANT**: By default, append `2>/dev/null` to all `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests to see thinking tokens or if debugging is needed.
-6. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
-7. **After Codex completes**, inform the user: "You can resume this Codex session at any time by saying 'codex resume' or asking me to continue with additional analysis or changes."
+3. When **resuming**, use the stored session ID: `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
+4. **IMPORTANT**: By default, append `2>/dev/null` to all `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests to see thinking tokens or if debugging is needed.
+5. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
 
 ### Quick Reference
 | Use case | Sandbox mode | Key flags |
@@ -34,12 +33,12 @@ Use these defaults automatically without asking the user. Only ask if the user e
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
 | Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/dev/null` |
 | Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/dev/null` |
-| Resume recent session | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume --last 2>/dev/null` (no flags allowed) |
+| Resume session by ID | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null` (no extra flags) |
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
 
 ## Following Up
-- After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec resume --last 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
+- After every `codex` command, capture the `session id` from output and store it for subsequent resume calls.
+- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
 
 ## Critical Evaluation of Codex Output
@@ -60,7 +59,7 @@ Codex is powered by OpenAI models with their own knowledge cutoffs and limitatio
 2. Provide evidence (your own knowledge, web search, docs)
 3. Optionally resume the Codex session to discuss the disagreement. **Identify yourself as Claude** so Codex knows it's a peer AI discussion. Use your actual model name (e.g., the model you are currently running as) instead of a hardcoded name:
    ```bash
-   echo "This is Claude (<your current model name>) following up. I disagree with [X] because [evidence]. What's your take on this?" | codex exec --skip-git-repo-check resume --last 2>/dev/null
+   echo "This is Claude (<your current model name>) following up. I disagree with [X] because [evidence]. What's your take on this?" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null
    ```
 4. Frame disagreements as discussions, not corrections - either AI could be wrong
 5. Let the user decide how to proceed if there's genuine ambiguity
