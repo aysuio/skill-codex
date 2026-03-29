@@ -23,8 +23,8 @@ Use these defaults automatically without asking the user. Only ask if the user e
    - `--skip-git-repo-check`
    - `-C, --cd <DIR>` (if needed)
    - `"your prompt here"` (as final positional argument)
-3. When **resuming**, use the stored session ID: `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt; grep 'session id:' /tmp/codex-stderr.txt`. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
-4. **IMPORTANT**: Codex outputs the session ID and metadata on **stderr**. Never use `2>/dev/null` — it swallows the session ID. Instead, redirect stderr to a temp file (`2>/tmp/codex-stderr.txt`) and extract the session ID with `grep 'session id:' /tmp/codex-stderr.txt`. After extracting the session ID, store it for subsequent resume calls. Only show the full stderr content if the user explicitly requests to see thinking tokens or if debugging is needed.
+3. When **resuming**, pass the new prompt as a **positional argument** after the session ID: `codex exec --skip-git-repo-check resume <SESSION_ID> "your prompt here" 2>/tmp/codex-stderr.txt`. Do **not** pipe prompts via stdin (`echo "..." |`) — stdin piping is unreliable during resume and delivers garbled input. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
+4. **IMPORTANT**: Codex outputs the session ID and metadata on **stderr**. Never use `2>/dev/null` — it swallows the session ID. Instead, redirect stderr to a temp file (`2>/tmp/codex-stderr.txt`) and extract the session ID with: `grep -a 'session id:' /tmp/codex-stderr.txt | sed 's/\x1b\[[0-9;]*m//g' | awk -F'session id: ' '{print $2}' | tr -d '[:space:]'`. The `-a` flag and `sed` are required because Codex stderr contains ANSI escape codes that cause `grep` to treat the file as binary. After extracting the session ID, store it for subsequent resume calls. Only show the full stderr content if the user explicitly requests to see thinking tokens or if debugging is needed.
 5. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
 
 ### Quick Reference
@@ -33,13 +33,13 @@ Use these defaults automatically without asking the user. Only ask if the user e
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/tmp/codex-stderr.txt` |
 | Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/tmp/codex-stderr.txt` |
 | Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/tmp/codex-stderr.txt` |
-| Resume session by ID | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt` (no extra flags) |
+| Resume session by ID | Inherited from original | `codex exec --skip-git-repo-check resume <SESSION_ID> "prompt" 2>/tmp/codex-stderr.txt` (no extra flags) |
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/tmp/codex-stderr.txt` |
-| Extract session ID after any run | — | `grep 'session id:' /tmp/codex-stderr.txt \| awk '{print $NF}'` |
+| Extract session ID after any run | — | `grep -a 'session id:' /tmp/codex-stderr.txt \| sed 's/\\x1b\\[[0-9;]*m//g' \| awk -F'session id: ' '{print $2}' \| tr -d '[:space:]'` |
 
 ## Following Up
-- After every `codex` command, extract the session ID from stderr: `grep 'session id:' /tmp/codex-stderr.txt | awk '{print $NF}'`. Store this ID for subsequent resume calls. **This is critical** — without the session ID, you cannot resume the correct session.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
+- After every `codex` command, extract the session ID from stderr: `grep -a 'session id:' /tmp/codex-stderr.txt | sed 's/\x1b\[[0-9;]*m//g' | awk -F'session id: ' '{print $2}' | tr -d '[:space:]'`. Store this ID for subsequent resume calls. **This is critical** — without the session ID, you cannot resume the correct session.
+- When resuming, pass the new prompt as a positional argument: `codex exec --skip-git-repo-check resume <SESSION_ID> "new prompt" 2>/tmp/codex-stderr.txt`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - If the current Claude conversation has no stored Codex session ID, start a new Codex session instead of using `--last`.
 - If resuming the stored session fails, report that the Claude-to-Codex session binding is no longer valid and start a fresh Codex session only after making that reset explicit to the user.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
@@ -62,7 +62,7 @@ Codex is powered by OpenAI models with their own knowledge cutoffs and limitatio
 2. Provide evidence (your own knowledge, web search, docs)
 3. Optionally resume the Codex session to discuss the disagreement. **Identify yourself as Claude** so Codex knows it's a peer AI discussion. Use your actual model name (e.g., the model you are currently running as) instead of a hardcoded name:
    ```bash
-   echo "This is Claude (<your current model name>) following up. I disagree with [X] because [evidence]. What's your take on this?" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt
+   codex exec --skip-git-repo-check resume <SESSION_ID> "This is Claude (<your current model name>) following up. I disagree with [X] because [evidence]. What's your take on this?" 2>/tmp/codex-stderr.txt
    ```
 4. Frame disagreements as discussions, not corrections - either AI could be wrong
 5. Let the user decide how to proceed if there's genuine ambiguity
