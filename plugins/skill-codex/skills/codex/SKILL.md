@@ -13,7 +13,7 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 Use these defaults automatically without asking the user. Only ask if the user explicitly requests a different model or effort level.
 
 ## Running a Task
-1. **Bind one Codex session to one Claude session.** Treat the current Claude conversation as owning exactly one Codex `session id`. After each `codex exec` run, capture the `session id` from the output and remember it for that Claude conversation only. On subsequent Codex calls in the same Claude conversation, always resume the exact stored `session id`. If no session ID is stored for the current Claude conversation, start a new Codex session. Do **not** use `resume --last` or any global "most recent session" fallback, because that can attach the wrong Codex session from another Claude conversation or repository. If the user explicitly provides a session ID or explicitly asks for a fresh session, follow that instruction instead.
+1. **Bind one Codex session to one Claude session.** After each `codex exec` run, extract the `session id` from stderr and store it for the current Claude conversation only. On subsequent Codex calls, always resume the exact stored session ID. Do **not** use `resume --last` or any global "most recent session" fallback — that can attach the wrong Codex session from another Claude conversation. Only start a new session if no session ID is stored, resume fails, or the user explicitly asks for a new session.
 2. When starting a **new session**, use `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode. Assemble the command with:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
@@ -23,22 +23,23 @@ Use these defaults automatically without asking the user. Only ask if the user e
    - `--skip-git-repo-check`
    - `-C, --cd <DIR>` (if needed)
    - `"your prompt here"` (as final positional argument)
-3. When **resuming**, use the session ID stored for the current Claude conversation: `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
-4. **IMPORTANT**: By default, append `2>/dev/null` to all `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests to see thinking tokens or if debugging is needed.
+3. When **resuming**, use the stored session ID: `echo "prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt; grep 'session id:' /tmp/codex-stderr.txt`. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
+4. **IMPORTANT**: Codex outputs the session ID and metadata on **stderr**. Never use `2>/dev/null` — it swallows the session ID. Instead, redirect stderr to a temp file (`2>/tmp/codex-stderr.txt`) and extract the session ID with `grep 'session id:' /tmp/codex-stderr.txt`. After extracting the session ID, store it for subsequent resume calls. Only show the full stderr content if the user explicitly requests to see thinking tokens or if debugging is needed.
 5. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
 
 ### Quick Reference
 | Use case | Sandbox mode | Key flags |
 | --- | --- | --- |
-| Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
-| Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/dev/null` |
-| Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/dev/null` |
-| Resume session by ID | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null` (no extra flags) |
-| Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
+| Read-only review or analysis | `read-only` | `--sandbox read-only 2>/tmp/codex-stderr.txt` |
+| Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/tmp/codex-stderr.txt` |
+| Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/tmp/codex-stderr.txt` |
+| Resume session by ID | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt` (no extra flags) |
+| Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/tmp/codex-stderr.txt` |
+| Extract session ID after any run | — | `grep 'session id:' /tmp/codex-stderr.txt \| awk '{print $NF}'` |
 
 ## Following Up
-- After every `codex` command, capture the `session id` from output and store it as the Codex session bound to the current Claude conversation.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
+- After every `codex` command, extract the session ID from stderr: `grep 'session id:' /tmp/codex-stderr.txt | awk '{print $NF}'`. Store this ID for subsequent resume calls. **This is critical** — without the session ID, you cannot resume the correct session.
+- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - If the current Claude conversation has no stored Codex session ID, start a new Codex session instead of using `--last`.
 - If resuming the stored session fails, report that the Claude-to-Codex session binding is no longer valid and start a fresh Codex session only after making that reset explicit to the user.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
@@ -61,7 +62,7 @@ Codex is powered by OpenAI models with their own knowledge cutoffs and limitatio
 2. Provide evidence (your own knowledge, web search, docs)
 3. Optionally resume the Codex session to discuss the disagreement. **Identify yourself as Claude** so Codex knows it's a peer AI discussion. Use your actual model name (e.g., the model you are currently running as) instead of a hardcoded name:
    ```bash
-   echo "This is Claude (<your current model name>) following up. I disagree with [X] because [evidence]. What's your take on this?" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/dev/null
+   echo "This is Claude (<your current model name>) following up. I disagree with [X] because [evidence]. What's your take on this?" | codex exec --skip-git-repo-check resume <SESSION_ID> 2>/tmp/codex-stderr.txt
    ```
 4. Frame disagreements as discussions, not corrections - either AI could be wrong
 5. Let the user decide how to proceed if there's genuine ambiguity
