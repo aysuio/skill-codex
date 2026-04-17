@@ -23,6 +23,8 @@ Use these defaults automatically without asking the user. Only ask if the user e
    - `--skip-git-repo-check`
    - `-C, --cd <DIR>` (if needed)
    - `"your prompt here"` (as final positional argument)
+
+   **Long prompt workaround (new sessions only):** Codex has a bug where long positional prompts are silently dropped and the CLI hangs waiting on stdin. For long or file-sourced prompts, write to a file and redirect via stdin, omitting the positional argument: `codex exec [flags] < /tmp/prompt.txt 2>/tmp/codex-stderr.txt`. Prefer `<` redirection over `echo "$(cat ...)" |` to avoid shell quoting/trailing-newline corruption. Does **not** apply to resume — resume still uses positional arg (stdin piping garbles input during resume per step 3).
 3. When **resuming**, pass the new prompt as a **positional argument** after the session ID: `codex exec --skip-git-repo-check resume <SESSION_ID> "your prompt here" 2>/tmp/codex-stderr.txt`. Do **not** pipe prompts via stdin (`echo "..." |`) — stdin piping is unreliable during resume and delivers garbled input. Don't use any configuration flags unless explicitly requested by the user. All flags must be inserted between `exec` and `resume`.
 4. **IMPORTANT**: Codex outputs the session ID and metadata on **stderr**. Never use `2>/dev/null` — it swallows the session ID. Instead, redirect stderr to a temp file (`2>/tmp/codex-stderr.txt`) and extract the session ID with: `grep -a 'session id:' /tmp/codex-stderr.txt | sed 's/\x1b\[[0-9;]*m//g' | awk -F'session id: ' '{print $2}' | tr -d '[:space:]'`. The `-a` flag and `sed` are required because Codex stderr contains ANSI escape codes that cause `grep` to treat the file as binary. After extracting the session ID, store it for subsequent resume calls. Only show the full stderr content if the user explicitly requests to see thinking tokens or if debugging is needed.
 5. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
@@ -33,6 +35,7 @@ Use these defaults automatically without asking the user. Only ask if the user e
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/tmp/codex-stderr.txt` |
 | Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/tmp/codex-stderr.txt` |
 | Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/tmp/codex-stderr.txt` |
+| Long prompt for new session | Match task needs | Write to file, omit positional: `codex exec [flags] < /tmp/prompt.txt 2>/tmp/codex-stderr.txt` |
 | Resume session by ID | Inherited from original | `codex exec --skip-git-repo-check resume <SESSION_ID> "prompt" 2>/tmp/codex-stderr.txt` (no extra flags) |
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/tmp/codex-stderr.txt` |
 | Extract session ID after any run | — | `grep -a 'session id:' /tmp/codex-stderr.txt \| sed 's/\\x1b\\[[0-9;]*m//g' \| awk -F'session id: ' '{print $2}' \| tr -d '[:space:]'` |
