@@ -50,6 +50,12 @@ Available session commands:
 - `/skill-codex:codex55` (or `/codex55` when installed standalone): `gpt-5.5`, `xhigh`, session key `codex-5.5-xhigh`
 - `/skill-codex:codex-dual` (or `/codex-dual` when installed standalone): run or resume two separate dual-reasoning lanes, `codex-dual-5.4-xhigh` and `codex-dual-5.5-xhigh`
 
+Resume behavior:
+- Normal `/skill-codex:codex55 <prompt>` behaves like `/skill-codex:codex`: it resumes the stored 5.5 lane automatically. You do not need to say "resume".
+- Normal `/skill-codex:codex-dual <prompt>` behaves the same way for both dual lanes: it resumes stored 5.4 and 5.5 dual sessions automatically.
+- Ask for "new", "fresh", or "reset" only when you want to force a new session.
+- Provide explicit IDs only when needed, for example: `/skill-codex:codex-dual resume 5.4=<SESSION_ID> 5.5=<SESSION_ID>`.
+
 ### Example Workflow
 
 **User prompt:**
