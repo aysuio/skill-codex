@@ -9,7 +9,7 @@ description: Use when the user asks to run Codex CLI with GPT-5.5 extra-high rea
 - **Session lane**: `codex-5.5-xhigh`
 - **Model**: `gpt-5.5`
 - **Reasoning effort**: `xhigh`
-- **Fast mode**: enabled (via `service_tier = "fast"` in codex config)
+- **Fast mode**: optional; only add `--enable fast_mode` when the user explicitly requests fast mode
 
 Use these defaults automatically without asking the user. Only ask if the user explicitly requests a different model or effort level.
 
@@ -22,7 +22,7 @@ This skill owns the `codex-5.5-xhigh` session lane. Keep it independent from the
    - `--config model_reasoning_effort="xhigh"`
    - `--sandbox danger-full-access`
    - `--full-auto`
-   - `--enable fast_mode`
+   - `--enable fast_mode` only if the user explicitly requests fast mode
    - `--skip-git-repo-check`
    - `-C, --cd <DIR>` (if needed)
    - `"your prompt here"` (as final positional argument)
