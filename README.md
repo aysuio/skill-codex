@@ -81,13 +81,13 @@ Claude will summarize the Codex analysis output, highlighting key suggestions an
 
 ### Dual Reasoning Workflow
 
-Use both independent Codex sessions when you want Claude Code to compare two reasoning passes:
+Use both independent Codex sessions when you want independent observation and review, especially when Claude Code already has a candidate plan:
 
 ```
 /skill-codex:codex-dual review this refactor plan and point out risks
 ```
 
-Claude Code will run or resume the `gpt-5.4/xhigh` and `gpt-5.5/xhigh` dual lanes separately, keep their session IDs isolated from the single-lane commands, then synthesize the consensus and disagreements.
+Claude Code will run or resume the `gpt-5.4/xhigh` and `gpt-5.5/xhigh` dual lanes separately, keep their session IDs isolated from the single-lane commands, ask each lane to form its own judgment before evaluating Claude's candidate, then synthesize findings, risks, and disagreements.
 
 ### Detailed Instructions
 See [`plugins/skill-codex/skills/codex/SKILL.md`](plugins/skill-codex/skills/codex/SKILL.md), [`plugins/skill-codex/skills/codex55/SKILL.md`](plugins/skill-codex/skills/codex55/SKILL.md), and [`plugins/skill-codex/skills/codex-dual/SKILL.md`](plugins/skill-codex/skills/codex-dual/SKILL.md) for complete operational instructions, CLI options, and workflow guidance.

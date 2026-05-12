@@ -17,9 +17,15 @@ Use these defaults automatically without asking the user. Only ask if the user e
 
 This skill owns the `codex-dual-5.4-xhigh` and `codex-dual-5.5-xhigh` session lanes. Keep both lanes separate from the single-lane `codex-5.4-xhigh` and `codex-5.5-xhigh` sessions.
 
+## Independent Evaluation Prompts
+- When Claude has a proposed plan, patch, diagnosis, or set of options, present it to both Codex lanes as **candidate context**, not as the decision frame. Each lane should independently inspect the repository/problem and form its own judgment before evaluating Claude's proposal.
+- Do not ask the lanes only to "choose between Claude's options" unless the user explicitly asks for a vote. Prefer: "Independently analyze the problem, state your best recommendation, then evaluate the following Claude candidate(s), including risks, missing options, and where you disagree."
+- If giving multiple Claude options, ask each lane to consider alternatives outside the list and to explain whether the best answer is absent from the provided options.
+- For dual review, synthesize each lane's independent findings first, then compare how they evaluate Claude's plan. Do not report the output as a vote unless the user asked for voting.
+
 ## Running a Task
 1. **Bind two Codex session lanes to one Claude session.** After each `codex exec` run, extract the `session id` from stderr and store it for the current Claude conversation under the matching dual lane only. On subsequent dual Codex calls, always resume the exact stored session ID for each lane. Do **not** use `resume --last` or any global "most recent session" fallback — that can attach the wrong Codex session from another Claude conversation or another model lane. Only start a new dual lane if no session ID is stored for that lane, resume fails, or the user explicitly asks for a new dual session.
-2. Build one clear prompt for both lanes. Ask each lane for independent analysis and tell it not to assume the other lane's answer.
+2. Build one clear prompt for both lanes. Ask each lane for independent analysis, tell it not to assume the other lane's answer, and treat any Claude proposal as candidate context only.
 3. When starting a **new 5.4 lane**, use `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode. Assemble the command with:
    - `-m, --model gpt-5.4`
    - `--config model_reasoning_effort="xhigh"`

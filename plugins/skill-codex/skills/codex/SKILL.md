@@ -15,6 +15,12 @@ Use these defaults automatically without asking the user. Only ask if the user e
 
 This skill owns the `codex-5.4-xhigh` session lane. Keep that lane separate from other Codex lanes, especially `codex-5.5-xhigh` used by the `codex55` skill. If the user asks for both independent Codex reasoners, use `codex-dual`; that skill owns separate dual-lane sessions.
 
+## Independent Evaluation Prompts
+- When Claude has a proposed plan, patch, diagnosis, or set of options, present it to Codex as **candidate context**, not as the decision frame. Codex should independently inspect the repository/problem and form its own judgment before evaluating Claude's proposal.
+- Do not ask Codex only to "choose between Claude's options" unless the user explicitly asks for a vote. Prefer: "Independently analyze the problem, state your best recommendation, then evaluate the following Claude candidate(s), including risks, missing options, and where you disagree."
+- If giving multiple Claude options, ask Codex to consider alternatives outside the list and to explain whether the best answer is absent from the provided options.
+- For reviews, ask Codex to lead with concrete findings, evidence, and residual risks, then comment on Claude's plan as one input among others.
+
 ## Running a Task
 1. **Bind one Codex session lane to one Claude session.** After each `codex exec` run, extract the `session id` from stderr and store it for the current Claude conversation under the `codex-5.4-xhigh` lane only. On subsequent 5.4 Codex calls, always resume that exact stored session ID. Do **not** use `resume --last` or any global "most recent session" fallback — that can attach the wrong Codex session from another Claude conversation or another model lane. Only start a new 5.4 session if no `codex-5.4-xhigh` session ID is stored, resume fails, or the user explicitly asks for a new 5.4 session.
 2. When starting a **new session**, use `--sandbox danger-full-access` unless the user explicitly requests a different sandbox mode. Assemble the command with:
