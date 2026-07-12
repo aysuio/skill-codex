@@ -33,7 +33,7 @@ Extract the skill folder manually:
 ```
 git clone --depth 1 git@github.com:aysuio/skill-codex.git /tmp/skills-temp && \
 mkdir -p ~/.claude/skills && \
-cp -r /tmp/skills-temp/plugins/skill-codex/skills/codex ~/.claude/skills/codex && \
+cp -r /tmp/skills-temp/plugins/skill-codex/skills/* ~/.claude/skills/ && \
 rm -rf /tmp/skills-temp
 ```
 
@@ -46,15 +46,15 @@ By default, this skill captures stderr in a temporary file so it can extract the
 Each Claude Code conversation should own one Codex session per model lane. The skill should capture the `session id` created for that lane and resume that exact session on follow-up turns. It should not fall back to `resume --last`, because "most recent" can point at a different Claude conversation, repository, or model lane.
 
 Available session commands:
-- `/skill-codex:codex` (or `/codex` when installed standalone): `gpt-5.4`, `xhigh`, session key `codex-5.4-xhigh`
-- `/skill-codex:codex55` (or `/codex55` when installed standalone): `gpt-5.5`, `xhigh`, session key `codex-5.5-xhigh`
-- `/skill-codex:codex-dual` (or `/codex-dual` when installed standalone): run or resume two separate dual-reasoning lanes, `codex-dual-5.4-xhigh` and `codex-dual-5.5-xhigh`
+- `/skill-codex:codex` (or `/codex` when installed standalone): `gpt-5.6-sol`, `xhigh`, session key `codex-5.6-sol-xhigh`
+- `/skill-codex:codex-terra` (or `/codex-terra` when installed standalone): `gpt-5.6-terra`, `xhigh`, session key `codex-5.6-terra-xhigh`
+- `/skill-codex:codex-dual` (or `/codex-dual` when installed standalone): run or resume two separate dual-reasoning lanes, `codex-dual-5.6-sol-xhigh` and `codex-dual-5.6-terra-xhigh`
 
 Resume behavior:
-- Normal `/skill-codex:codex55 <prompt>` behaves like `/skill-codex:codex`: it resumes the stored 5.5 lane automatically. You do not need to say "resume".
-- Normal `/skill-codex:codex-dual <prompt>` behaves the same way for both dual lanes: it resumes stored 5.4 and 5.5 dual sessions automatically.
+- Normal `/skill-codex:codex-terra <prompt>` behaves like `/skill-codex:codex`: it resumes the stored Terra lane automatically. You do not need to say "resume".
+- Normal `/skill-codex:codex-dual <prompt>` behaves the same way for both dual lanes: it resumes stored Sol and Terra dual sessions automatically.
 - Ask for "new", "fresh", or "reset" only when you want to force a new session.
-- Provide explicit IDs only when needed, for example: `/skill-codex:codex-dual resume 5.4=<SESSION_ID> 5.5=<SESSION_ID>`.
+- Provide explicit IDs only when needed, for example: `/skill-codex:codex-dual resume sol=<SESSION_ID> terra=<SESSION_ID>`.
 
 ### Example Workflow
 
@@ -65,10 +65,10 @@ Use codex to analyze this repository and suggest improvements for my claude code
 
 **Claude Code response:**
 Claude will activate the Codex skill and:
-1. Use default model (`gpt-5.4`), reasoning effort (`xhigh`), and sandbox (`danger-full-access`) automatically
+1. Use default model (`gpt-5.6-sol`), reasoning effort (`xhigh`), and sandbox (`danger-full-access`) automatically
 2. Run a command like:
 ```bash
-codex exec -m gpt-5.4 \
+codex exec -m gpt-5.6-sol \
   --config model_reasoning_effort="xhigh" \
   --sandbox danger-full-access \
   --full-auto \
@@ -87,7 +87,7 @@ Use both independent Codex sessions when you want independent observation and re
 /skill-codex:codex-dual review this refactor plan and point out risks
 ```
 
-Claude Code will run or resume the `gpt-5.4/xhigh` and `gpt-5.5/xhigh` dual lanes separately, keep their session IDs isolated from the single-lane commands, ask each lane to form its own judgment before evaluating Claude's candidate, then synthesize findings, risks, and disagreements.
+Claude Code will run or resume the `gpt-5.6-sol/xhigh` and `gpt-5.6-terra/xhigh` dual lanes separately, keep their session IDs isolated from the single-lane commands, ask each lane to form its own judgment before evaluating Claude's candidate, then synthesize findings, risks, and disagreements.
 
 ### Detailed Instructions
-See [`plugins/skill-codex/skills/codex/SKILL.md`](plugins/skill-codex/skills/codex/SKILL.md), [`plugins/skill-codex/skills/codex55/SKILL.md`](plugins/skill-codex/skills/codex55/SKILL.md), and [`plugins/skill-codex/skills/codex-dual/SKILL.md`](plugins/skill-codex/skills/codex-dual/SKILL.md) for complete operational instructions, CLI options, and workflow guidance.
+See [`plugins/skill-codex/skills/codex/SKILL.md`](plugins/skill-codex/skills/codex/SKILL.md), [`plugins/skill-codex/skills/codex-terra/SKILL.md`](plugins/skill-codex/skills/codex-terra/SKILL.md), and [`plugins/skill-codex/skills/codex-dual/SKILL.md`](plugins/skill-codex/skills/codex-dual/SKILL.md) for complete operational instructions, CLI options, and workflow guidance.
